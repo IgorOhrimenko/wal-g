@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/stretchr/testify/assert"
@@ -47,6 +48,14 @@ func TestConnResetRetryerOperationAborted(t *testing.T) {
 	retryer := NewConnResetRetryer(client.DefaultRetryer{NumMaxRetries: 15})
 	resp := &http.Response{StatusCode: 409}
 	assert.True(t, retryer.ShouldRetry(&request.Request{HTTPResponse: resp}))
+}
+
+func TestConnResetRetryerInvalidPart(t *testing.T) {
+	retryer := NewConnResetRetryer(client.DefaultRetryer{NumMaxRetries: 15})
+	req := &request.Request{
+		Error: awserr.New("InvalidPart", "One or more of the specified parts could not be found", nil),
+	}
+	assert.True(t, retryer.ShouldRetry(req))
 }
 
 func TestConnResetRetryerThrottling(t *testing.T) {

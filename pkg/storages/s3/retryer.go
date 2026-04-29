@@ -3,6 +3,7 @@ package s3
 import (
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/wal-g/tracelog"
 )
@@ -31,6 +32,11 @@ func (r ConnResetRetryer) ShouldRetry(req *request.Request) bool {
 
 	if req.HTTPResponse != nil && req.HTTPResponse.StatusCode == 409 {
 		tracelog.InfoLogger.Printf("S3 returned HTTP 409 (OperationAborted), retrying request")
+		return true
+	}
+
+	if awsErr, ok := req.Error.(awserr.Error); ok && awsErr.Code() == "InvalidPart" {
+		tracelog.InfoLogger.Printf("S3 returned InvalidPart, retrying request")
 		return true
 	}
 
